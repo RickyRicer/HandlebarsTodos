@@ -19,26 +19,8 @@ module.exports = {
 		}
 	},
 //	getting users
-	getAllUsers: async (req, res) => {
-		req.session.save(() => {
-			if (req.session.visitCount) {
-				req.session.visitCount++;
-			} else {
-				req.session.visitCount = 1;
-			}
-		});
-		try {
-			const usersData = await User.findAll({});
-			const users = usersData.map(user => user.get({ plain: true }));
-			res.render('allUsers', {
-				users,
-				favoriteFood: 'Ice cream sandwich',
-				visitCount: req.session.visitCount,
-				loggedInUser: req.session.user || null,
-			});
-		} catch (e) {
-			res.json(e);
-		}
+	renderHomePage: async (req, res) => {
+		res.render('homepage');
 	},
 	getUserById: async (req, res) => {
 		req.session.save(() => {
@@ -83,5 +65,49 @@ module.exports = {
 			console.log(e);
 			res.json(e);
 		}
-	}
+	},
+
+	signupHandler: async (req, res) => {
+		const { email, username, password } = req.body;
+
+		try {
+			const createdUser = await User.create({
+				email,
+				username, 
+				password,
+			});
+			const user = createdUser.get({ plain: true });
+
+			req.session.save(() => {
+				req.session.loggedIn = true;
+				req.session.user = user;
+				res.redirect('/todos');
+			});
+		} catch (e) {
+			res.json(e);
+		}
+	},
+
+	loginView: (req, res) => {
+		if (req.session.loggedIn) {
+			return res.redirect('/todos');
+		}
+		res.render('login');
+	},
+	signupView: (req, res) => {
+		if (req.session.loggedIn) {
+			return res.redirect('/todos');
+		}
+		res.render('signUp');
+	},
+	logout: (req, res) => {
+		req.session.destroy(() => {
+			res.send({ status: true });
+		})
+	},
 }
+// /signup
+// Create a function in the controller that checks if a user is already logged in
+// if so, redirect them to /todos
+// if not, render the signup page
+// this should be rendered on /signup endpoint
